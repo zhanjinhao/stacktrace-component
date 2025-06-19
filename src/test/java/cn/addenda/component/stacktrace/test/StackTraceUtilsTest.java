@@ -12,7 +12,7 @@ public class StackTraceUtilsTest {
 
   @Test
   public void test() {
-    Set<String> defaultFilterPrefixSet = StackTraceUtils.getDefaultExcludedClassNameSet();
+    Set<String> defaultFilterPrefixSet = StackTraceUtils.getDefaultExcludeSet();
     System.out.println(defaultFilterPrefixSet);
   }
 

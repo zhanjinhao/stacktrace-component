@@ -21,7 +21,7 @@ import java.util.stream.Collectors;
 public class StackTraceUtils {
 
   @Getter
-  private static final Set<String> defaultExcludedClassNameSet;
+  private static final Set<String> defaultExcludeSet;
 
   private static final String EXCLUDED_PATH = "META-INF/stacktrace-component.excluded";
 
@@ -45,16 +45,16 @@ public class StackTraceUtils {
       throw new StackTraceException(MessageFormatter.format("Can not open file: [{}].", EXCLUDED_PATH).getMessage(), e);
     }
     lines.removeIf(a -> a == null || a.isEmpty());
-    defaultExcludedClassNameSet = Collections.unmodifiableSet(lines);
+    defaultExcludeSet = Collections.unmodifiableSet(lines);
   }
 
   /**
    * @param useSimpleClassName 是否按简写的类名输出
-   * @param filterClassNames   全类名
+   * @param excludes           全类名
    */
   public static String getCallerInfo(
-          boolean useSimpleClassName, boolean ifExcludeLambda, boolean ifExcludeAnonymousInnerClass, String... filterClassNames) {
-    StackTraceElement stackTraceElement = determineStackTraceElement(ifExcludeLambda, ifExcludeAnonymousInnerClass, filterClassNames);
+          boolean useSimpleClassName, boolean ifExcludeLambda, boolean ifExcludeAnonymousInnerClass, String... excludes) {
+    StackTraceElement stackTraceElement = determineStackTraceElement(ifExcludeLambda, ifExcludeAnonymousInnerClass, excludes);
     String className = stackTraceElement.getClassName();
     String methodName = stackTraceElement.getMethodName();
     if (useSimpleClassName) {
@@ -77,11 +77,11 @@ public class StackTraceUtils {
 
   /**
    * @param useSimpleClassName 是否按简写的类名输出
-   * @param filterClassNames   全类名
+   * @param excludes           全类名
    */
   public static String getDetailedCallerInfo(
-          boolean useSimpleClassName, boolean ifExcludeLambda, boolean ifExcludeAnonymousInnerClass, String... filterClassNames) {
-    StackTraceElement stackTraceElement = determineStackTraceElement(ifExcludeLambda, ifExcludeAnonymousInnerClass, filterClassNames);
+          boolean useSimpleClassName, boolean ifExcludeLambda, boolean ifExcludeAnonymousInnerClass, String... excludes) {
+    StackTraceElement stackTraceElement = determineStackTraceElement(ifExcludeLambda, ifExcludeAnonymousInnerClass, excludes);
     String className = stackTraceElement.getClassName();
     String fileName = stackTraceElement.getFileName();
     int lineNumber = stackTraceElement.getLineNumber();
@@ -106,17 +106,17 @@ public class StackTraceUtils {
   }
 
   private static StackTraceElement determineStackTraceElement(
-          boolean ifExcludeLambda, boolean ifExcludeAnonymousInnerClass, String... filterClassNames) {
-    Set<String> filterClassNameSet = defaultExcludedClassNameSet;
-    if (filterClassNames != null) {
-      filterClassNameSet = new HashSet<>(defaultExcludedClassNameSet);
-      filterClassNameSet.addAll(Arrays.stream(filterClassNames).collect(Collectors.toList()));
+          boolean ifExcludeLambda, boolean ifExcludeAnonymousInnerClass, String... excludes) {
+    Set<String> excludeSet = defaultExcludeSet;
+    if (excludes != null) {
+      excludeSet = new HashSet<>(defaultExcludeSet);
+      excludeSet.addAll(Arrays.stream(excludes).collect(Collectors.toList()));
     }
-    return determineStackTraceElement(Thread.currentThread().getStackTrace(), filterClassNameSet, ifExcludeLambda, ifExcludeAnonymousInnerClass);
+    return determineStackTraceElement(Thread.currentThread().getStackTrace(), excludeSet, ifExcludeLambda, ifExcludeAnonymousInnerClass);
   }
 
   private static StackTraceElement determineStackTraceElement(
-          StackTraceElement[] stackTraceElements, Set<String> filterClassNameSet,
+          StackTraceElement[] stackTraceElements, Set<String> excludeSet,
           boolean ifExcludeLambda, boolean ifExcludeAnonymousInnerClass) {
     if (stackTraceElements == null || stackTraceElements.length == 0) {
       throw new IllegalArgumentException(MessageFormatter.format("The arg `stackTraceElements`[{}] can not null and can not be empty.", stackTraceElements).getMessage());
@@ -130,8 +130,8 @@ public class StackTraceUtils {
         continue;
       }
       boolean flag = false;
-      for (String filterClassName : filterClassNameSet) {
-        if (className.equals(filterClassName)) {
+      for (String exclude : excludeSet) {
+        if (className.equals(exclude)) {
           flag = true;
           break;
         }
@@ -140,16 +140,16 @@ public class StackTraceUtils {
         return stackTraceElement;
       }
     }
-    String a = "All elements of `stackTraceElements` are excluded. The `stackTraceElements` are [{}]. The `filterClassNameSet` are [{}].";
-    throw new StackTraceException(MessageFormatter.arrayFormat(a, new Object[]{toString(stackTraceElements), toString(filterClassNameSet)}).getMessage());
+    String a = "All elements of `stackTraceElements` are excluded. The `stackTraceElements` are [{}]. The `excludeSet` are [{}].";
+    throw new StackTraceException(MessageFormatter.arrayFormat(a, new Object[]{toString(stackTraceElements), toString(excludeSet)}).getMessage());
   }
 
   private static String toString(StackTraceElement[] stackTraceElements) {
     return Arrays.stream(stackTraceElements).map(StackTraceElement::toString).collect(Collectors.joining(",", "[", "]"));
   }
 
-  private static String toString(Set<String> filterClassNameSet) {
-    return filterClassNameSet.stream().collect(Collectors.joining(",", "[", "]"));
+  private static String toString(Set<String> excludeSet) {
+    return excludeSet.stream().collect(Collectors.joining(",", "[", "]"));
   }
 
   private static String extractSimpleClassName(String className) {
