@@ -1,2 +1,2 @@
-cn.addenda.component.stacktrace.StackTraceUtils
-java.lang.Thread
+#cn.addenda.component.stacktrace.StackTraceUtils
+#java.lang.Thread

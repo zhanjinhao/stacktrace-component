@@ -21,12 +21,12 @@ import java.util.stream.Collectors;
 public class StackTraceUtils {
 
   @Getter
-  private static final Set<String> defaultExcludeSet;
+  private static final Set<IdentifierMather> defaultExcludeSet;
 
   private static final String EXCLUDED_PATH = "META-INF/stacktrace-component.excluded";
 
   static {
-    Set<String> lines = new HashSet<>();
+    Set<IdentifierMather> lines = new HashSet<>();
     try {
       ClassLoader classLoader = StackTraceUtils.class.getClassLoader();
       Enumeration<URL> urls = classLoader.getResources(EXCLUDED_PATH);
@@ -38,13 +38,15 @@ public class StackTraceUtils {
         BufferedReader bufferedReader = new BufferedReader(new InputStreamReader(inputStream));
         String line;
         while ((line = bufferedReader.readLine()) != null) {
-          lines.add(line);
+          if (line.isEmpty()) {
+            continue;
+          }
+          lines.add(IdentifierMatherFactory.getIdentifierMatcher(line));
         }
       }
     } catch (Exception e) {
       throw new StackTraceException(MessageFormatter.format("Can not open file: [{}].", EXCLUDED_PATH).getMessage(), e);
     }
-    lines.removeIf(a -> a == null || a.isEmpty());
     defaultExcludeSet = Collections.unmodifiableSet(lines);
   }
 
@@ -73,6 +75,10 @@ public class StackTraceUtils {
 
   public static String getCallerInfo() {
     return getCallerInfo(true, false, false);
+  }
+
+  public static String getCallerInfo(String... excludes) {
+    return getCallerInfo(true, false, false, excludes);
   }
 
   /**
@@ -105,37 +111,37 @@ public class StackTraceUtils {
     return getDetailedCallerInfo(true, false, false);
   }
 
+  public static String getDetailedCallerInfo(String... excludes) {
+    return getDetailedCallerInfo(true, false, false, excludes);
+  }
+
   private static StackTraceElement determineStackTraceElement(
           boolean ifExcludeLambda, boolean ifExcludeAnonymousInnerClass, String... excludes) {
-    Set<String> excludeSet = defaultExcludeSet;
+    Set<IdentifierMather> excludeSet = defaultExcludeSet;
     if (excludes != null) {
       excludeSet = new HashSet<>(defaultExcludeSet);
-      excludeSet.addAll(Arrays.stream(excludes).collect(Collectors.toList()));
+      excludeSet.addAll(Arrays.stream(excludes).filter(Objects::nonNull)
+              .map(IdentifierMatherFactory::getIdentifierMatcher).collect(Collectors.toList()));
     }
     return determineStackTraceElement(Thread.currentThread().getStackTrace(), excludeSet, ifExcludeLambda, ifExcludeAnonymousInnerClass);
   }
 
   private static StackTraceElement determineStackTraceElement(
-          StackTraceElement[] stackTraceElements, Set<String> excludeSet,
+          StackTraceElement[] stackTraceElements, Set<IdentifierMather> excludeSet,
           boolean ifExcludeLambda, boolean ifExcludeAnonymousInnerClass) {
     if (stackTraceElements == null || stackTraceElements.length == 0) {
       throw new IllegalArgumentException(MessageFormatter.format("The arg `stackTraceElements`[{}] can not null and can not be empty.", stackTraceElements).getMessage());
     }
     for (StackTraceElement stackTraceElement : stackTraceElements) {
-      if (ifExcludeLambda && stackTraceElement.getMethodName().matches(".*lambda\\$.*")) {
+      String methodName = stackTraceElement.getMethodName();
+      if (ifExcludeLambda && methodName.matches(".*lambda\\$.*")) {
         continue;
       }
       String className = stackTraceElement.getClassName();
       if (ifExcludeAnonymousInnerClass && className.matches(".*\\$\\d+.*")) {
         continue;
       }
-      boolean flag = false;
-      for (String exclude : excludeSet) {
-        if (className.equals(exclude)) {
-          flag = true;
-          break;
-        }
-      }
+      boolean flag = IdentifierMatherFactory.match(excludeSet, stackTraceElement);
       if (!flag) {
         return stackTraceElement;
       }
@@ -148,8 +154,8 @@ public class StackTraceUtils {
     return Arrays.stream(stackTraceElements).map(StackTraceElement::toString).collect(Collectors.joining(",", "[", "]"));
   }
 
-  private static String toString(Set<String> excludeSet) {
-    return excludeSet.stream().collect(Collectors.joining(",", "[", "]"));
+  private static String toString(Set<IdentifierMather> excludeSet) {
+    return excludeSet.stream().map(IdentifierMather::toString).collect(Collectors.joining(",", "[", "]"));
   }
 
   private static String extractSimpleClassName(String className) {
