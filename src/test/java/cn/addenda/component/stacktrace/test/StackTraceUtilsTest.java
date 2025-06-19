@@ -5,6 +5,7 @@ import org.junit.Assert;
 import org.junit.Test;
 
 import java.util.Set;
+import java.util.concurrent.*;
 import java.util.function.Supplier;
 
 public class StackTraceUtilsTest {
@@ -115,13 +116,13 @@ public class StackTraceUtilsTest {
     };
     Supplier<String> c = () -> StackTraceUtils.getDetailedCallerInfo(true, true, true);
 
-    Assert.assertEquals("StackTraceUtilsTest#test3 in line 118 of file StackTraceUtilsTest.java", a.get());
-    Assert.assertEquals("StackTraceUtilsTest#test3 in line 119 of file StackTraceUtilsTest.java", b.get());
-    Assert.assertEquals("StackTraceUtilsTest#test3 in line 120 of file StackTraceUtilsTest.java", c.get());
+    Assert.assertEquals("StackTraceUtilsTest#test3 in line[119] of file[StackTraceUtilsTest.java]", a.get());
+    Assert.assertEquals("StackTraceUtilsTest#test3 in line[120] of file[StackTraceUtilsTest.java]", b.get());
+    Assert.assertEquals("StackTraceUtilsTest#test3 in line[121] of file[StackTraceUtilsTest.java]", c.get());
 
-    Assert.assertEquals("StackTraceUtilsTest#test3 in line 122 of file StackTraceUtilsTest.java", a3.get());
-    Assert.assertEquals("StackTraceUtilsTest#test3 in line 123 of file StackTraceUtilsTest.java", b3.get());
-    Assert.assertEquals("StackTraceUtilsTest#test3 in line 124 of file StackTraceUtilsTest.java", c3.get());
+    Assert.assertEquals("StackTraceUtilsTest#test3 in line[123] of file[StackTraceUtilsTest.java]", a3.get());
+    Assert.assertEquals("StackTraceUtilsTest#test3 in line[124] of file[StackTraceUtilsTest.java]", b3.get());
+    Assert.assertEquals("StackTraceUtilsTest#test3 in line[125] of file[StackTraceUtilsTest.java]", c3.get());
   }
 
   Supplier<String> a4 = new Supplier<String>() {
@@ -148,13 +149,32 @@ public class StackTraceUtilsTest {
     };
     Supplier<String> c = () -> StackTraceUtils.getDetailedCallerInfo(true, false, false);
 
-    Assert.assertEquals("StackTraceUtilsTest$8#get in line 143 of file StackTraceUtilsTest.java", a.get());
-    Assert.assertEquals("StackTraceUtilsTest#lambda$test4$14 in line 147 of file StackTraceUtilsTest.java", b.get());
-    Assert.assertEquals("StackTraceUtilsTest#lambda$test4$15 in line 149 of file StackTraceUtilsTest.java", c.get());
+    Assert.assertEquals("StackTraceUtilsTest$8#get in line[144] of file[StackTraceUtilsTest.java]", a.get());
+    Assert.assertEquals("StackTraceUtilsTest#lambda$test4$14 in line[148] of file[StackTraceUtilsTest.java]", b.get());
+    Assert.assertEquals("StackTraceUtilsTest#lambda$test4$15 in line[150] of file[StackTraceUtilsTest.java]", c.get());
 
-    Assert.assertEquals("StackTraceUtilsTest$7#get in line 130 of file StackTraceUtilsTest.java", a4.get());
-    Assert.assertEquals("StackTraceUtilsTest#lambda$new$12 in line 134 of file StackTraceUtilsTest.java", b4.get());
-    Assert.assertEquals("StackTraceUtilsTest#lambda$new$13 in line 136 of file StackTraceUtilsTest.java", c4.get());
+    Assert.assertEquals("StackTraceUtilsTest$7#get in line[131] of file[StackTraceUtilsTest.java]", a4.get());
+    Assert.assertEquals("StackTraceUtilsTest#lambda$new$12 in line[135] of file[StackTraceUtilsTest.java]", b4.get());
+    Assert.assertEquals("StackTraceUtilsTest#lambda$new$13 in line[137] of file[StackTraceUtilsTest.java]", c4.get());
+  }
+
+
+  @Test
+  public void test5() throws Exception {
+    ExecutorService executorService = Executors.newSingleThreadExecutor();
+
+    Callable<String> callable = new Callable<String>() {
+      @Override
+      public String call() {
+        return StackTraceUtils.getDetailedCallerInfo(false, false);
+      }
+    };
+
+    Future<String> submit = executorService.submit(callable);
+
+    String o = submit.get();
+    Assert.assertEquals("StackTraceUtilsTest$9#call in line[169] of file[StackTraceUtilsTest.java]", o);
+    executorService.awaitTermination(10, TimeUnit.SECONDS);
   }
 
 }
