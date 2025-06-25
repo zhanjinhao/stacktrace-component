@@ -2,14 +2,15 @@ package cn.addenda.component.stacktrace.test;
 
 import cn.addenda.component.stacktrace.IdentifierMatherFactory;
 import cn.addenda.component.stacktrace.StackTraceUtils;
+import org.junit.Assert;
 import org.junit.Test;
 
 public class StackTraceUtilsInnerClassTest {
 
   @Test
   public void test1() {
-    System.out.println(new InnerClass().testInnerClass());
-    System.out.println(new StaticInnerClass().testStaticInnerClass());
+    Assert.assertEquals("StackTraceUtilsInnerClassTest#test1 of StackTraceUtilsInnerClassTest.java:12", new InnerClass().testInnerClass());
+    Assert.assertEquals("StackTraceUtilsInnerClassTest#test1 of StackTraceUtilsInnerClassTest.java:13", new StaticInnerClass().testStaticInnerClass());
   }
 
   class InnerClass {

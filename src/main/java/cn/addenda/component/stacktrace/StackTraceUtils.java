@@ -95,7 +95,7 @@ public class StackTraceUtils {
     if (useSimpleClassName) {
       className = extractSimpleClassName(className);
     }
-    return MessageFormatter.arrayFormat("{} in line[{}] of file[{}]", new Object[]{className + "#" + methodName, lineNumber, fileName}).getMessage();
+    return MessageFormatter.arrayFormat("{} of {}:{}", new Object[]{className + "#" + methodName, fileName, lineNumber}).getMessage();
   }
 
   public static String getDetailedCallerInfo(

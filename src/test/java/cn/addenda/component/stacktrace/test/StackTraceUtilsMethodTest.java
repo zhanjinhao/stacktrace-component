@@ -9,7 +9,7 @@ public class StackTraceUtilsMethodTest {
 
   @Test
   public void test1() {
-    Assert.assertEquals("StackTraceUtilsMethodTest#test2 in line[16] of file[StackTraceUtilsMethodTest.java]", test2());
+    Assert.assertEquals("StackTraceUtilsMethodTest#test2 of StackTraceUtilsMethodTest.java:16", test2());
   }
 
   private String test2() {
